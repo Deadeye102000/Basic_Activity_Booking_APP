@@ -6,21 +6,21 @@ const auth = async (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
-      throw new Error();
+      return res.status(401).json({ message: 'Authentication required' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findOne({ _id: decoded.userId });
+    const user = await User.findById(decoded.userId);
 
     if (!user) {
-      throw new Error();
+      return res.status(401).json({ message: 'User not found' });
     }
 
     req.user = user;
     req.token = token;
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Please authenticate.' });
+    res.status(401).json({ message: 'Invalid token' });
   }
 };
 
@@ -28,12 +28,12 @@ const adminAuth = async (req, res, next) => {
   try {
     await auth(req, res, () => {
       if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Access denied. Admin only.' });
+        return res.status(403).json({ message: 'Admin access required' });
       }
       next();
     });
   } catch (error) {
-    res.status(401).json({ message: 'Please authenticate.' });
+    res.status(401).json({ message: 'Authentication failed' });
   }
 };
 
